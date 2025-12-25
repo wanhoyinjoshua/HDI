@@ -79,6 +79,7 @@ features = [
 ]
 import pickle
 file_path = 'able_body_pkl_nature2.pkl' # Replace with your actual file path
+#this file has alreadt computed the avg of different strides 
 print("suckers")
 import os
 cwd = os.getcwd()

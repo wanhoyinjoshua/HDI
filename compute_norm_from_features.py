@@ -102,77 +102,70 @@ with open(file_path, "rb") as f:
     data=subjects[0]
     #for each subjec avg of all strides 
     error_data={}
+    final_mean=[]
+    final_sd=[]
+    finalobject={}
+    subjectobject = {}
+
    
     for feature in features:
-        print(data[feature])
-        
-        result= compute_xyz_mean_sd(data[feature])
+      
+        individual_sub_data={}
         all_mean_arr_x = np.empty((0, 1001))
         all_mean_arr_y = np.empty((0, 1001))
         all_mean_arr_z = np.empty((0, 1001))
-        all_mean_arr_x_sd = np.empty((0, 1001))
-        all_mean_arr_y_sd = np.empty((0, 1001))
-        all_mean_arr_z_sd = np.empty((0, 1001))
-        for subject in subjects:
-         
+        for subject_id, subject in enumerate(subjects):
+            #this is at a subject level
+            sid = f"sub_{subject_id:03d}"
+            subjectobject.setdefault(sid, {})
+            subjectobject[sid].setdefault(feature, {})
+
             avg_sub_mean_x= np.mean(subject[feature]["x"],axis=0)
-            
             avg_sub_mean_x_row = avg_sub_mean_x.reshape(1, -1)
-            all_mean_arr_x =np.vstack([all_mean_arr_x, avg_sub_mean_x_row])
+            all_mean_arr_x =np.vstack([all_mean_arr_x, avg_sub_mean_x_row])  
+            subjectobject[sid][feature]["mean_x"] = avg_sub_mean_x
+            subjectobject[sid][feature]["sd_x"] = np.std(subject[feature]["x"],axis=0)
+        
            
             avg_sub_mean_y= np.mean(subject[feature]["y"],axis=0)
             avg_sub_mean_y_row = avg_sub_mean_y.reshape(1, -1)
             all_mean_arr_y =np.vstack([all_mean_arr_y, avg_sub_mean_y_row])
+            subjectobject[sid][feature]["mean_y"] = avg_sub_mean_y
+            subjectobject[sid][feature]["sd_y"] = np.std(subject[feature]["y"],axis=0)
+        
+
 
             avg_sub_mean_z= np.mean(subject[feature]["z"],axis=0)
             avg_sub_mean_z_row = avg_sub_mean_z.reshape(1, -1)
             all_mean_arr_z=np.vstack([all_mean_arr_z, avg_sub_mean_z_row])
+            subjectobject[sid][feature]["mean_z"] = avg_sub_mean_z
+            subjectobject[sid][feature]["sd_z"] = np.std(subject[feature]["z"],axis=0)
         
 
+
+
+        finalobject.setdefault(feature, {})
+        print(all_mean_arr_x.shape)
+        finalobject[feature]["mean_x"] = np.mean(all_mean_arr_x, axis=0)
+        finalobject[feature]["sd_x"]   = np.std(all_mean_arr_x, axis=0)
+        finalobject[feature]["mean_y"] = np.mean(all_mean_arr_y, axis=0)
+        finalobject[feature]["sd_y"]   = np.std(all_mean_arr_y, axis=0)
+        finalobject[feature]["mean_z"] = np.mean(all_mean_arr_z, axis=0)
+        finalobject[feature]["sd_z"]   = np.std(all_mean_arr_z, axis=0)
+        
        
-        #plot(feature,result)
-        #need to select sample 
-        experiment= list(range(1, 139))
-        repeat_exp=20
-        exp_result={}
-        for exp in experiment:
-            print("fuck yea new exp")
-           
-            num_rows = 20
-            exp = 1001  # number of elements per row
-            all_samples = np.empty((num_rows, exp), dtype=int)
-            for i in range(num_rows):
-                random_samples_indices = random.choices(experiment, k=exp)
-                print(i)
-                for sam in random_samples_indices:
-                    print(sam)
-                    sam = [sam - 1] if isinstance(sam, int) else sam-1
-                    print(rmse(np.mean(all_mean_arr_x,axis=0),np.mean(all_mean_arr_x[sam, :],axis=0)))
-                    #now same with sd 
-                    #compare 
-                
-                  
-            # now i have the 20 rows of data selected 
+       
+    import pickle
+    #so this is per subject.... it contains an array, each array contains 138 subjects...
+    #so i need to save two files one being 
+    # ah and so the sd here is at a subject level
+    # what i need is the the total mean, and the sd for that 
 
-            #calculate mean and sd with random sample 
-            #repeat exp 20 times 
-            # get the avergae of that and sd
-            # compare it with the gold standard 
-            # get the error score 
-            #populate the error data
-
-        """
-        i need a function to intake seed no and the sbjects data 
-        and output a computed avg and sd for bth x y and z for given feature 
-        so it will just be time series data
-        for subject in subjects:
-            combined_x_norm
-            combined_x_sd
-            combined_y_norm
-            combined_y_sd
-            combined_z_norm
-            combined_zsd 
-        """
-        
-        
+    with open("mean_data_abled_nature/all_mean_sd_perfeature.pkl", "wb") as f:
+        pickle.dump(finalobject, f, protocol=pickle.HIGHEST_PROTOCOL)
+        #need to do sd still
+    print (subjectobject)
+    with open("mean_data_abled_nature/sub_level_mean_sd_allfeat.pkl", "wb") as f:
+        pickle.dump(subjectobject, f, protocol=pickle.HIGHEST_PROTOCOL)
+        #need to do sd still
         
