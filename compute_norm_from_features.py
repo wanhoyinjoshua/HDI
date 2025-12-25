@@ -100,6 +100,8 @@ with open(file_path, "rb") as f:
     subjects = pickle.load(f)
     #data = pickle.load(subject)
     data=subjects[0]
+    if len(subjects) > 115:
+        subjects.pop(115)  # removes the 116th element
     #for each subjec avg of all strides 
     error_data={}
     final_mean=[]
@@ -119,7 +121,13 @@ with open(file_path, "rb") as f:
             sid = f"sub_{subject_id:03d}"
             subjectobject.setdefault(sid, {})
             subjectobject[sid].setdefault(feature, {})
-
+            arr = subject[feature]["x"]
+            nan_count = np.isnan(arr).sum()
+            print(arr.shape)
+            
+            if nan_count > 1:
+                print(f"nan count in feature_{feature}: {nan_count}")
+                print(subject_id)
             avg_sub_mean_x= np.mean(subject[feature]["x"],axis=0)
             avg_sub_mean_x_row = avg_sub_mean_x.reshape(1, -1)
             all_mean_arr_x =np.vstack([all_mean_arr_x, avg_sub_mean_x_row])  
@@ -145,7 +153,7 @@ with open(file_path, "rb") as f:
 
 
         finalobject.setdefault(feature, {})
-        print(all_mean_arr_x.shape)
+        
         finalobject[feature]["mean_x"] = np.mean(all_mean_arr_x, axis=0)
         finalobject[feature]["sd_x"]   = np.std(all_mean_arr_x, axis=0)
         finalobject[feature]["mean_y"] = np.mean(all_mean_arr_y, axis=0)
@@ -164,7 +172,7 @@ with open(file_path, "rb") as f:
     with open("mean_data_abled_nature/all_mean_sd_perfeature.pkl", "wb") as f:
         pickle.dump(finalobject, f, protocol=pickle.HIGHEST_PROTOCOL)
         #need to do sd still
-    print (subjectobject)
+
     with open("mean_data_abled_nature/sub_level_mean_sd_allfeat.pkl", "wb") as f:
         pickle.dump(subjectobject, f, protocol=pickle.HIGHEST_PROTOCOL)
         #need to do sd still

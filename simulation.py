@@ -78,6 +78,21 @@ def compute_average_and_sd_across_samples_then_repeats(
 # Main routine
 # ---------------------------
 
+def check_integrity(objects_to_check):
+    for obj_name, obj in objects_to_check.items():
+        print(f"\nChecking {obj_name}...")
+        for feature, axes_data in obj.items():
+            for axis, array in axes_data.items():
+                arr = np.array(array)  # make sure it’s a numpy array
+                # Check length
+                if arr.shape[0] != 1001:
+                    print(f"  WARNING: {feature} {axis} length = {arr.shape[0]} (expected 1001)")
+                # Check NaNs
+                nan_count = np.isnan(arr).sum()
+                if nan_count > 0:
+                    print(f"  WARNING: {feature} {axis} contains {nan_count} NaNs")
+    print("Integrity check complete.")
+
 def run_sampling_stability(
     all_sample_mean_sd_per_feature: Dict[str, Dict[str, np.ndarray]],
     mean_per_subject: List[Dict[str, Dict[str, np.ndarray]]],
@@ -98,31 +113,33 @@ def run_sampling_stability(
       - Store RMSE per iteration and summary in pickletarget-like dict.
     """
     pickletarget: Dict[str, Any] = {}
-
+    
     # Pre-extract per-feature per-axis per-subject arrays (to avoid re-allocations)
     # mean_per_subject is list of subjects; each subject[feature] has 'x','y','z'
     n_subjects = len(mean_per_subject)
-
+ 
     for feature in featurelist:
         # Collect per-subject arrays for this feature
         # all_subjects_data: [{x: np(1001), y: np(1001), z: np(1001)}, ...]
+        print(f"Processing {feature}")
         all_subjects_data = [
             subj[feature] for subj in mean_per_subject
             if feature in subj
         ]
+        print(all_subjects_data)
         if len(all_subjects_data) != n_subjects:
             raise ValueError(f"Feature '{feature}' missing for some subjects: "
                              f"found {len(all_subjects_data)} / expected {n_subjects}")
 
         # Stack X/Y/Z separately -> (S, 1001)
-        data2d_x = _stack_axis_data([d['x'] for d in all_subjects_data])
-        data2d_y = _stack_axis_data([d['y'] for d in all_subjects_data])
-        data2d_z = _stack_axis_data([d['z'] for d in all_subjects_data])
+        data2d_x = _stack_axis_data([d['mean_x'] for d in all_subjects_data])
+        data2d_y = _stack_axis_data([d['mean_y'] for d in all_subjects_data])
+        data2d_z = _stack_axis_data([d['mean_z'] for d in all_subjects_data])
 
         # Ground-truth arrays
         gt = all_sample_mean_sd_per_feature[feature]
-        x_mean_gt, y_mean_gt, z_mean_gt = gt["x_mean"], gt["y_mean"], gt["z_mean"]
-        x_sd_gt,   y_sd_gt,   z_sd_gt   = gt["x_sd"],   gt["y_sd"],   gt["z_sd"]
+        x_mean_gt, y_mean_gt, z_mean_gt = gt["mean_x"], gt["mean_y"], gt["mean_z"]
+        x_sd_gt,   y_sd_gt,   z_sd_gt   = gt["sd_x"],   gt["sd_y"],   gt["sd_z"]
 
         # Per-iteration RMSEs stored for inspection
         rmse_per_iteration = {
@@ -138,6 +155,7 @@ def run_sampling_stability(
         # Iterate sample sizes
         for n in iteration_arr:
             # Create indices for repeats
+            print(f"processing {feature}_iteration_{n}")
             indices_array = random_sampling(n_subjects, int(n), repeats_per_iteration, seed=seed)
 
             # Compute across samples -> repeats -> attempts (X/Y/Z)
@@ -193,21 +211,79 @@ def run_sampling_stability(
 
 if __name__ == "__main__":
     # Example placeholders—replace with your actual file paths & feature list
-    all_sample_mean_sd_per_feature = load_pkl("mean_data_abled_nature/all_mean_sd_perfeature.pkl.pkl")
-    # mean_per_subject = load_pkl("path/to/mean_per_subject.pkl")
-    # featurelist = ["HipAngles", "KneeAngles", ...]
-    # iteration_arr = np.arange(1, 51)  # sample sizes from 1 to 50
-
-    # result = run_sampling_stability(
-    #     all_sample_mean_sd_per_feature=all_sample_mean_sd_per_feature,
-    #     mean_per_subject=mean_per_subject,
-    #     featurelist=featurelist,
-    #     iteration_arr=iteration_arr,
-    #     repeats_per_iteration=20,
-    #     rmse_threshold_mean=0.05,
-    #     rmse_threshold_sd=0.05,
-    #     ddof=0,
-    #     seed=42
-    # )
-    # print(result)
+    all_sample_mean_sd_per_feature = load_pkl("mean_data_abled_nature/all_mean_sd_perfeature.pkl")
+    mean_per_subject = list(load_pkl("mean_data_abled_nature/sub_level_mean_sd_allfeat.pkl").values())
+    featurelist = features = [
+    "L_HipAngles",
+    "R_HipAngles",
+    "L_KneeAngles",
+    "R_KneeAngles",
+    "L_AnkleAngles",
+    "R_AnkleAngles",
+    "L_PelvisAngles",
+    "R_PelvisAngles",
+    
+    "L_ShoulderAngles",
+    "R_ShoulderAngles",
+    "L_ElbowAngles",
+    "R_ElbowAngles",
+    "L_WristAngles",
+    "R_WristAngles",
+    "L_NeckAngles",
+    "R_NeckAngles",
+    "L_SpineAngles",
+    "R_SpineAngles",
+    "L_HeadAngles",
+    "R_HeadAngles",
+    "B_CentreOfMass",
+    "L_ThoraxAngles",
+    "R_ThoraxAngles"
+]   #i previously removed index 115 as it contains shitty nan data in case i need to cross reference data....
+    iteration_arr = np.arange(1, 138)  # sample sizes from 1 to 50
+    print(mean_per_subject)
+    objects_to_check = {
+    "all_sample_mean_sd_per_feature": all_sample_mean_sd_per_feature,
+    "mean_per_subject": mean_per_subject
+}
+    #check_integrity(objects_to_check)
+    result = run_sampling_stability(
+         all_sample_mean_sd_per_feature=all_sample_mean_sd_per_feature,
+         mean_per_subject=mean_per_subject,
+         featurelist=featurelist,
+         iteration_arr=iteration_arr,
+         repeats_per_iteration=20,
+         rmse_threshold_mean=5,
+         rmse_threshold_sd=5,
+         ddof=0,
+         seed=42
+     )
+    print(result)
     pass
+
+    with open("mean_data_abled_nature/rmse_results.pkl", "wb") as f:
+        pickle.dump(result, f, protocol=pickle.HIGHEST_PROTOCOL)
+        #need to do sd still
+    #print (subjectobject)
+  
+    import matplotlib.pyplot as plt
+
+    # Suppose your data is stored in finalobject like you showed
+    for feature, data in result.items():
+        plt.figure(figsize=(6, 4))
+        
+        # For each axis, extract the sample size and RMSE
+        for axis in ["x", "y", "z"]:
+            samples = [t[0] for t in data["rmse_mean_per_iteration"][axis]]
+            rmse_vals = [t[1] for t in data["rmse_mean_per_iteration"][axis]]
+            plt.plot(samples, rmse_vals, marker='o', label=f"{axis.upper()} axis")
+        
+        plt.xlabel("Sample size")
+        plt.ylabel("RMSE")
+        plt.title(f"RMSE vs Sample size - {feature}")
+        plt.legend()
+        plt.grid(True)
+        
+        # Save figure as PNG
+        plt.tight_layout()
+        plt.savefig(f"{feature}_rmse.png", dpi=300)
+        plt.close()  # close figure to avoid overlap in next iteration
