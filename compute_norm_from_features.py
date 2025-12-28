@@ -23,6 +23,13 @@ features = [
     "R_AnkleAngles",
     "L_PelvisAngles",
     "R_PelvisAngles",
+    "R_ASI",
+    "R_KNE",
+    "L_ASI",
+    "L_KNE",
+    #"B_SACR",
+    "B_PELP",
+    "B_PELO",
     
     "L_ShoulderAngles",
     "R_ShoulderAngles",
@@ -99,7 +106,17 @@ def compute_mean_sd(timeseries):
 with open(file_path, "rb") as f:
     subjects = pickle.load(f)
     #data = pickle.load(subject)
+
     data=subjects[0]
+    
+    print(data["R_ASI"])
+    print(data["R_KNE"])
+    print(data["L_ASI"])
+    print(data["L_KNE"])
+    print(data["B_SACR"])
+    print(data["B_PELP"])
+    
+
     if len(subjects) > 115:
         subjects.pop(115)  # removes the 116th element
     #for each subjec avg of all strides 
@@ -121,9 +138,16 @@ with open(file_path, "rb") as f:
             sid = f"sub_{subject_id:03d}"
             subjectobject.setdefault(sid, {})
             subjectobject[sid].setdefault(feature, {})
-            arr = subject[feature]["x"]
+            print(feature)
+            print(subject_id)
+
+            if subject[feature]["x"] is not None:
+                arr = subject[feature]["x"]
+                
+            else:
+                arr = np.array([])
             nan_count = np.isnan(arr).sum()
-            print(arr.shape)
+         
             
             if nan_count > 1:
                 print(f"nan count in feature_{feature}: {nan_count}")
