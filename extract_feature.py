@@ -82,13 +82,13 @@ def cal_HJC(sub_data, mm=0):
     origin_Z = (L_ASI_z + R_ASI_z) / 2
 
     # 7. Left and Right HJC
-    HJC_L = np.stack([origin_X + X_offset,
-                      origin_Y + Y_offset,
-                      origin_Z + Z_offset], axis=1)
+    HJC_L = {"x":origin_X + X_offset,
+            "y": origin_Y + Y_offset,
+                   "z":   origin_Z + Z_offset}
 
-    HJC_R = np.stack([origin_X + X_offset,
-                      origin_Y - Y_offset,  # Y offset negated for right hip
-                      origin_Z + Z_offset], axis=1)
+    HJC_R = {"x":origin_X + X_offset,
+            "y": origin_Y - Y_offset,
+                   "z":   origin_Z + Z_offset}
 
     return HJC_L, HJC_R
 
@@ -153,6 +153,8 @@ features = [
     "PelvisAngles",
     "ASI",
     "KNE",
+    "ANK",
+
     "bilateral_SACR",
     "bilateral_PELP",
     "bilateral_PELO",
@@ -229,7 +231,7 @@ for fname in sorted(os.listdir(PKL_DIR)):
         result["L_HJC"]=cal_HJC(result)[0]
         result["R_HJC"]=cal_HJC(result)[1]
         print("joint center")
-        print(result["L_HJC"].shape)
+      
         print(result["L_HJC"])
 
         final_result.append(result)
