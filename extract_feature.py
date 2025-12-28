@@ -154,6 +154,9 @@ features = [
     "ASI",
     "KNE",
     "ANK",
+    "HEE",
+    "TOE",
+
 
     "bilateral_SACR",
     "bilateral_PELP",
